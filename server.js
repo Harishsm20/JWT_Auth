@@ -2,8 +2,11 @@ const express = require('express');
 const app = express();
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const authenticateToken = require('./middleware/authenticateToken');
+const {setAuthHeader, updateToken} = require('./middleware/setAuthHeader');
 
 app.use(express.json());
+app.use(setAuthHeader);
 
 const users = [
     {
@@ -16,18 +19,6 @@ const users = [
     },
 ] 
 
-const authenticateToken = (req, res, next) =>{
-    const authHeader = req.headers['authorization'];
-    const token  = authHeader && authHeader.split(' ')[1];
-    if(!token) return res.sendStatus(401);
-
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-        if(err) return res.sendStatus(403);
-        
-        req.user = user;
-        next();
-    })
-}
 
 app.get('/', (req, res) => {
     res.json(users);
@@ -36,9 +27,12 @@ app.get('/', (req, res) => {
 app.post('/login', (req, res) =>{
     // Authenticate
     const username = req.body.username;
-    const user = {name : username};
+    const user = users.find((u) => u.name === username);
 
+    if(!user) res.sendStatus(404);
+    
     const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
+    updateToken(accessToken)
     res.json({accessToken: accessToken});
 });
 
