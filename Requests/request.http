@@ -1,0 +1,17 @@
+# Login request to get the token
+POST http://localhost:3000/login
+Content-Type: application/json
+
+{
+  "username": "Wade Willson"
+}
+
+###
+
+# Request to get names using the token
+GET http://localhost:3000/names
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiV2FkZSBXaWxsc29uIiwic3VwTmFtZSI6IkRlYWRQb29sIiwiaWF0IjoxNzIzMjU3OTQzfQ.X_UdMB8rUt6cGCcrkA15HbTEBDZvH2jbnl4EO2AQln8
+
+###
+
+GET http://localhost:3000/

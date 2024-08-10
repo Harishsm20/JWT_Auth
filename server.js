@@ -32,6 +32,8 @@ app.post('/login', (req, res) =>{
     if(!user) res.sendStatus(404);
     
     const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
+
+    console.log(`Generated Access Token: ${accessToken}`);
     updateToken(accessToken)
     res.json({accessToken: accessToken});
 });
