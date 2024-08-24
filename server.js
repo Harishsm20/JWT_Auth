@@ -38,6 +38,19 @@ app.get('/', (req, res) => {
     res.json(users);
 })
 
+app.post('/signup', (req, res) =>{
+    const {name, email, password} = req.body;
+    const user = ids.find((u) => u.email === email)
+
+    if(!user){
+        ids.push({email, password})
+        res.status(201).json({message: "Signup Successfull"})    
+    }
+    else{
+        res.status(409).json({ message: "User already exists" });
+    }
+})
+
 app.post('/login', (req, res) => {
     // Auth
     const {email, password} = req.body;
@@ -51,16 +64,13 @@ app.post('/login', (req, res) => {
             console.log("login success")
         }
         else{
+            console.log("Password Incorrect")
             res.json("Password Incorrect")
         }
     }
     else{
         res.sendStatus(404);
-    }
-
-
-
-    
+    }    
 })
 
 app.get('/names',authenticateToken, (req, res) =>{
