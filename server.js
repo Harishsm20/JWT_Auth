@@ -6,6 +6,9 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const authenticateToken = require('./middleware/authenticateToken');
 const {setAuthHeader, updateToken} = require('./middleware/setAuthHeader');
+const connectDb = require('./DB/db')
+
+connectDb();
 
 app.use(express.json());
 app.use(setAuthHeader);
