@@ -7,6 +7,7 @@ require('dotenv').config();
 const authenticateToken = require('./middleware/authenticateToken');
 const {setAuthHeader, updateToken} = require('./middleware/setAuthHeader');
 const connectDb = require('./DB/db')
+const authController = require('./controllers/authController')
 
 connectDb();
 
@@ -40,6 +41,8 @@ app.use(cors({ origin: 'http://localhost:5173' }));
 app.get('/', (req, res) => {
     res.json(users);
 })
+
+app.use('/api/auth', authController);
 
 app.post('/signup', (req, res) =>{
     const {name, email, password} = req.body;
