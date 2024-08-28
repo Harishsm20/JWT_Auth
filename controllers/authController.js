@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router();
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt')
 
 
 router.post('/signup', async (req, res) =>{
@@ -31,7 +32,8 @@ router.post('/login', async (req, res) => {
     const user  = await User.findOne({email});
     
     if(user){
-        if(user.password === password){
+        const isMatch = await bcrypt.compare(password, user.password)
+        if(isMatch){
             const payLoad = {
                 name: user.name,
                 email: user.email
