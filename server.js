@@ -36,7 +36,7 @@ const users = [
     },
 ] 
 
-app.use(cors({ origin: 'http://localhost:5173' })); 
+app.use(cors({ origin: process.env.CLIENT_URL })); 
 
 app.get('/', (req, res) => {
     res.json(users);
