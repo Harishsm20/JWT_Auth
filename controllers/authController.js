@@ -29,8 +29,7 @@ router.post('/signup', async (req, res) => {
     try {
         const existingUser = await User.findOne({ email });
         if (!existingUser) {
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const newUser = new User({ name, email, password: hashedPassword });
+            const newUser = new User({ name, email, password});
             await newUser.save();
             console.log("Signup successful");
             res.status(201).json({ data: "Success", message: "Signup Successful" });
@@ -108,8 +107,7 @@ router.post('/reset-password', async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        user.password = hashedPassword;
+        user.password = newPassword;
         await user.save();
         console.log("Password has been reset successfully");
         res.json({ message: "Password has been reset successfully" });
