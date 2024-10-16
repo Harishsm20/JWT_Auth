@@ -119,18 +119,27 @@ router.post('/forgot-password', async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const resetToken = jwt.sign({ email: user.email }, process.env.RESET_TOKEN_SECRET, { expiresIn: '5min' });
-        const resetURL = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+        // Generate OTP and save it in DB (valid for 5 minutes)
+        const otpCode = generateOTP();
+        const otpExpiration = new Date(Date.now() + 5 * 60 * 1000); // OTP valid for 5 minutes
 
+        await Otp.findOneAndUpdate(
+            { email },
+            { otp: otpCode, expiresAt: otpExpiration },
+            { upsert: true }
+        );
+
+        const resetToken = jwt.sign({ email: user.email }, process.env.RESET_TOKEN_SECRET, { expiresIn: '5min' });
+
+        // Send OTP email
         await transporter.sendMail({
             from: process.env.EMAIL_USER,
             to: user.email,
-            subject: "Password Reset Request",
-            text: `You requested a password reset. Click the link to reset your password: ${resetURL}`,
+            subject: "Password Reset OTP",
+            text: `Your OTP for password reset is ${otpCode}. This OTP is valid for 5 minutes.`,
         });
 
-        console.log("Password reset email sent");
-        res.json({ message: "Password reset link sent to your email" });
+        res.json({ message: "OTP sent to your email", resetToken });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error" });
@@ -157,5 +166,24 @@ router.post('/reset-password', async (req, res) => {
         res.status(400).json({ message: "Invalid or expired token" });
     }
 });
+
+router.post('/confirm-otp', async (req, res) => {
+    const { email, otp } = req.body;
+
+    try {
+        // Verify OTP
+        const otpRecord = await Otp.findOne({ email });
+        if (!otpRecord || otpRecord.otp !== otp || new Date() > otpRecord.expiresAt) {
+            return res.status(400).json({ message: "Invalid or expired OTP" });
+        }
+
+        // OTP is valid, allow the user to reset password
+        res.json({ message: "OTP verified, you can now reset your password" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
 
 module.exports = router;
