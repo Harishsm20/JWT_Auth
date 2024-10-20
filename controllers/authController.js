@@ -148,22 +148,29 @@ router.post('/forgot-password', async (req, res) => {
 
 // Reset Password Route
 router.post('/reset-password', async (req, res) => {
-    const { token, newPassword } = req.body;
+    const { token, otp, newPassword } = req.body;
 
     try {
         const decoded = jwt.verify(token, process.env.RESET_TOKEN_SECRET);
-        const user = await User.findOne({ email: decoded.email });
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
+        const { email } = decoded;
+
+        // Verify OTP
+        const otpRecord = await Otp.findOne({ email });
+        if (!otpRecord || otpRecord.otp !== otp || new Date() > otpRecord.expiresAt) {
+            return res.status(400).json({ message: "Invalid or expired OTP" });
         }
 
-        user.password = newPassword;
-        await user.save();
-        console.log("Password has been reset successfully");
+        // Reset password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await User.findOneAndUpdate({ email }, { password: hashedPassword });
+
+        // Remove OTP after password reset
+        await Otp.deleteOne({ email });
+
         res.json({ message: "Password has been reset successfully" });
     } catch (error) {
         console.error(error);
-        res.status(400).json({ message: "Invalid or expired token" });
+        res.status(500).json({ message: "Server error" });
     }
 });
 
