@@ -84,6 +84,29 @@ router.post('/signup', async (req, res) => {
 });
 
 
+router.post('/save-user', async (req, res) => {
+    try {
+        const { email, name, age } = req.body;
+
+        // Create a new user instance
+        const newUser = new User({
+            email: email,
+            name: name,
+            age: age
+        });
+
+        // Save the user to the database
+        await newUser.save();
+
+        // Send response
+        res.status(201).json({ message: 'User created successfully', user: newUser });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
@@ -154,12 +177,6 @@ router.post('/reset-password', async (req, res) => {
         const decoded = jwt.verify(token, process.env.RESET_TOKEN_SECRET);
         const { email } = decoded;
 
-        // Verify OTP
-        const otpRecord = await Otp.findOne({ email });
-        if (!otpRecord || otpRecord.otp !== otp || new Date() > otpRecord.expiresAt) {
-            return res.status(400).json({ message: "Invalid or expired OTP" });
-        }
-
         // Reset password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         await User.findOneAndUpdate({ email }, { password: hashedPassword });
@@ -185,7 +202,7 @@ router.post('/confirm-otp', async (req, res) => {
         }
 
         // OTP is valid, allow the user to reset password
-        res.json({ message: "OTP verified, you can now reset your password" });
+        res.json({ message: "OTP verified" });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error" });
