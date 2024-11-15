@@ -34,6 +34,14 @@ router.post('/signup', async (req, res) => {
     const { name, email, password, otp } = req.body;
 
     try {
+        console.log("Signup Request Body:", req.body); // Log request body
+
+        // Ensure required fields are provided
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: "Name, email, and password are required" });
+        }
+
+        // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ data: "Exists", message: "User already exists" });
@@ -42,20 +50,28 @@ router.post('/signup', async (req, res) => {
         if (otp) {
             // Verify OTP
             const otpRecord = await Otp.findOne({ email });
-            if (!otpRecord || otpRecord.otp !== otp || new Date() > otpRecord.expiresAt) {
-                return res.status(400).json({ message: "Invalid or expired OTP" });
+            if (!otpRecord) {
+                return res.status(400).json({ message: "OTP not found for this email" });
             }
 
-            // If OTP is valid, create a new user
+            if (otpRecord.otp !== otp) {
+                return res.status(400).json({ message: "Invalid OTP" });
+            }
+
+            if (new Date() > otpRecord.expiresAt) {
+                return res.status(400).json({ message: "OTP has expired" });
+            }
+
+            // OTP is valid, hash the password
             const hashedPassword = await bcrypt.hash(password, 10);
             const newUser = new User({ name, email, password: hashedPassword });
-            await newUser.save();
 
-            // Remove OTP record after successful signup
+            // Save user and remove OTP
+            await newUser.save();
             await Otp.deleteOne({ email });
 
-            console.log("Signup successful");
-            res.status(201).json({ message: "Signup successful" });
+            console.log("User signed up successfully:", newUser);
+            return res.status(201).json({ message: "Signup successful" });
         } else {
             // Generate and save OTP in the database
             const otpCode = generateOTP();
@@ -64,7 +80,7 @@ router.post('/signup', async (req, res) => {
             await Otp.findOneAndUpdate(
                 { email },
                 { otp: otpCode, expiresAt: otpExpiration },
-                { upsert: true } // Create or update the OTP record
+                { upsert: true }
             );
 
             await transporter.sendMail({
@@ -74,12 +90,12 @@ router.post('/signup', async (req, res) => {
                 text: `Your OTP for signup is ${otpCode}. This OTP is valid for 2 minutes.`,
             });
 
-            console.log("OTP sent to email:", email);
-            res.json({ message: "OTP sent to your email" });
+            console.log("OTP sent to email:", email, "OTP:", otpCode);
+            return res.json({ message: "OTP sent to your email" });
         }
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
+        console.error("Error in /signup route:", error);
+        return res.status(500).json({ message: "Server error", error: error.message });
     }
 });
 
