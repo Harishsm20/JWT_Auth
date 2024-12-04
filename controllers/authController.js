@@ -225,5 +225,22 @@ router.post('/confirm-otp', async (req, res) => {
     }
 });
 
+router.post('/api/auth/verify-token', (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(403).send({ message: 'No token provided' });
+  }
+
+  jwt.verify(token, 'your_secret_key', (err, decoded) => {
+    if (err) {
+      return res.status(403).send({ message: 'Invalid or expired token' });
+    }
+
+    // Optionally, you can send back user data if needed
+    res.status(200).send({ valid: true });
+  });
+});
+
 
 module.exports = router;
